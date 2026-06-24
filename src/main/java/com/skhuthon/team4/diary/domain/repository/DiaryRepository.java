@@ -18,7 +18,7 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     List<Diary> findAllByIsPublicTrueOrderByCreatedAtDesc();
 
     // 랜덤 피드
-    @Query(value = "SELECT * FROM diaries ORDER BY RAND()", nativeQuery = true)
+    @Query(value = "SELECT * FROM diaries WHERE is_public = true ORDER BY RAND()", nativeQuery = true)
     List<Diary> findAllRandom();
 
     // 핫 피드 top 10
@@ -41,9 +41,9 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     @Query("SELECT COALESCE(SUM(d.empathyCount), 0) FROM Diary d WHERE d.member = :member")
     int sumEmpathyCountByMember(@Param("member") Member member);
 
-    // 내용 기준 공개 일기 검색
-    @Query("SELECT d FROM Diary d WHERE d.isPublic = true AND d.content LIKE %:keyword% ORDER BY d.createdAt DESC")
-    List<Diary> searchByContent(@Param("keyword") String keyword);
+    // 제목 + 본문 기준 공개 일기 검색
+    @Query("SELECT d FROM Diary d WHERE d.isPublic = true AND (d.title LIKE %:keyword% OR d.content LIKE %:keyword%) ORDER BY d.createdAt DESC")
+    List<Diary> searchByKeyword(@Param("keyword") String keyword);
 
     // 나만 보기 (비공개 포함 내 일기)
     List<Diary> findByMemberAndDiaryDateBetweenOrderByCreatedAtDesc(

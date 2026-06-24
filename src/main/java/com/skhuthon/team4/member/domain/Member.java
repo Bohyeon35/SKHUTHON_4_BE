@@ -17,7 +17,7 @@ public class Member {
     @Column(name = "id")
     private Long id; // 카카오 고유 ID (auto increment 아님)
 
-    @Column(name = "nickname", nullable = false, length = 50)
+    @Column(name = "nickname", nullable = false, length = 10)
     private String nickname;
 
     @Column(name = "profile_image", length = 255)

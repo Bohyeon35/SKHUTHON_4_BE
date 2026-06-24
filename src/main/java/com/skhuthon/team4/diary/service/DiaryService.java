@@ -70,14 +70,13 @@ public class DiaryService {
                 .toList();
     }
 
+    // 내 일기 (년/월 필터 + 나만보기)
     public List<DiaryResponseDto> getMyDiaries(Member member, int year, int month, String visibility) {
         List<Diary> diaries;
 
         if ("private".equals(visibility)) {
-            // 비공개 일기만
             diaries = diaryRepository.findByMemberAndIsPublicFalseOrderByCreatedAtDesc(member);
         } else {
-            // 전체 (공개 + 비공개)
             diaries = diaryRepository.findByMemberAndYearAndMonth(member, year, month);
         }
 
@@ -107,13 +106,12 @@ public class DiaryService {
         return DiaryResponseDto.from(diary, commentRepository.countByDiary(diary));
     }
 
-    // GET /api/diaries/search?keyword=
-    // 검색 메서드 추가
+    // GET /api/diaries/search?keyword= - 제목 + 본문 검색
     public List<DiaryResponseDto> searchDiaries(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return List.of();
         }
-        return diaryRepository.searchByContent(keyword.trim())
+        return diaryRepository.searchByKeyword(keyword.trim())
                 .stream()
                 .map(d -> DiaryResponseDto.from(d, commentRepository.countByDiary(d)))
                 .toList();

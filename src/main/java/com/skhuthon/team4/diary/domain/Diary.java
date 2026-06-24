@@ -29,7 +29,10 @@ public class Diary {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 50)
+    private String title;
+
+    @Column(nullable = false, length = 500)
     private String content;
 
     @Column(nullable = false)
@@ -43,12 +46,9 @@ public class Diary {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false, length = 50)
-    private String title;
-
     @Column(nullable = false)
     @Builder.Default
-    private boolean isPublic = true;  // 기본값: 공개
+    private boolean isPublic = true;
 
     public void increaseEmpathyCount() {
         this.empathyCount++;
