@@ -32,7 +32,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         log.info("OAuth2 로그인 성공 - memberId: {}", memberId);
 
         // 프론트엔드로 토큰과 함께 리다이렉트
-        String redirectUrl = "http://13.209.96.135:3000/oauth/callback?token=" + token;
+        String redirectUrl = "http://gksruf.store:3000/oauth/callback?token=" + token;
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 }

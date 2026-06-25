@@ -1,0 +1,109 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Make application.yml
+        run: |
+          mkdir -p src/main/resources
+          cat > src/main/resources/application.yml << 'EOF'
+          spring:
+            application:
+              name: skhuthon4
+            datasource:
+              url: ${{ secrets.DATASOURCE_URL }}
+              username: ${{ secrets.DATASOURCE_USERNAME }}
+              password: ${{ secrets.DATASOURCE_PASSWORD }}
+              driver-class-name: com.mysql.cj.jdbc.Driver
+            jpa:
+              hibernate:
+                ddl-auto: update
+              properties:
+                hibernate:
+                  format_sql: true
+              show-sql: true
+              open-in-view: false
+            security:
+              oauth2:
+                client:
+                  registration:
+                    kakao:
+                      client-id: ${{ secrets.KAKAO_CLIENT_ID }}
+                      client-secret: ${{ secrets.KAKAO_CLIENT_SECRET }}
+                      redirect-uri: http://gksruf.store:8080/login/oauth2/code/kakao
+                      authorization-grant-type: authorization_code
+                      client-authentication-method: client_secret_post
+                      scope:
+                        - profile_nickname
+                        - account_email
+                  provider:
+                    kakao:
+                      authorization-uri: https://kauth.kakao.com/oauth/authorize
+                      token-uri: https://kauth.kakao.com/oauth/token
+                      user-info-uri: https://kapi.kakao.com/v2/user/me
+                      user-name-attribute: id
+            mail:
+              host: smtp.gmail.com
+              port: 587
+              username: ${{ secrets.MAIL_USERNAME }}
+              password: ${{ secrets.MAIL_PASSWORD }}
+              properties:
+                mail:
+                  smtp:
+                    auth: true
+                    starttls:
+                      enable: true
+          jwt:
+            secret: ${{ secrets.JWT_SECRET }}
+            expiration: 86400000
+          server:
+            port: 8080
+          springdoc:
+            api-docs:
+              path: /v3/api-docs
+            default-consumes-media-type: application/json
+            default-produces-media-type: application/json
+          EOF
+
+      - name: Build with Gradle
+        run: ./gradlew bootJar -x test
+
+      - name: Copy jar to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          source: "build/libs/skhuthon4-0.0.1-SNAPSHOT.jar"
+          target: "~/"
+          strip_components: 2
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            pkill -f skhuthon4 || true
+            sleep 2
+            nohup java -jar ~/skhuthon4-0.0.1-SNAPSHOT.jar > ~/app.log 2>&1 &
+            echo "Deployed!"
