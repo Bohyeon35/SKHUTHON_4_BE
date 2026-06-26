@@ -2,6 +2,7 @@ package com.skhuthon.team4.diary.controller;
 
 import com.skhuthon.team4.diary.dto.DiaryRequestDto;
 import com.skhuthon.team4.diary.dto.DiaryResponseDto;
+import com.skhuthon.team4.diary.dto.TodayMoodResponseDto;
 import com.skhuthon.team4.diary.service.DiaryService;
 import com.skhuthon.team4.global.common.ApiResponseTemplate;
 import com.skhuthon.team4.member.domain.Member;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/diaries")
@@ -41,6 +43,12 @@ public class DiaryController {
     @GetMapping("/hot")
     public ApiResponseTemplate<List<DiaryResponseDto>> getHotFeed() {
         return ApiResponseTemplate.success(diaryService.getHotFeed());
+    }
+
+    // 홈 화면 감정 통계 (전날 오후 9시 ~ 오늘 오후 9시)
+    @GetMapping("/today-mood")
+    public ApiResponseTemplate<TodayMoodResponseDto> getTodayMood() {
+        return ApiResponseTemplate.success(diaryService.getTodayMood());
     }
 
     // 내 일기 (년/월 필터 + 나만보기)
@@ -90,5 +98,16 @@ public class DiaryController {
             @RequestBody DiaryRequestDto request
     ) {
         return ApiResponseTemplate.success(diaryService.updateDiary(member, diaryId, request));
+    }
+
+    // 감정 업데이트 (일기 작성 후 감정 선택)
+    @PatchMapping("/{diaryId}/emotion")
+    public ApiResponseTemplate<DiaryResponseDto> updateEmotion(
+            @AuthenticationPrincipal Member member,
+            @PathVariable Long diaryId,
+            @RequestBody Map<String, Integer> body
+    ) {
+        Integer emotion = body.get("emotion");
+        return ApiResponseTemplate.success(diaryService.updateEmotion(member, diaryId, emotion));
     }
 }

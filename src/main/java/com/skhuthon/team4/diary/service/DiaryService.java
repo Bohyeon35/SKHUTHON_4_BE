@@ -5,6 +5,7 @@ import com.skhuthon.team4.diary.domain.Diary;
 import com.skhuthon.team4.diary.domain.repository.DiaryRepository;
 import com.skhuthon.team4.diary.dto.DiaryRequestDto;
 import com.skhuthon.team4.diary.dto.DiaryResponseDto;
+import com.skhuthon.team4.diary.dto.TodayMoodResponseDto;
 import com.skhuthon.team4.global.exception.BusinessException;
 import com.skhuthon.team4.global.exception.ErrorCode;
 import com.skhuthon.team4.global.filter.BadWordFilter;
@@ -14,7 +15,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +38,6 @@ public class DiaryService {
             throw new BusinessException(ErrorCode.DIARY_ALREADY_EXISTS);
         }
 
-        // 금칙어 체크
         if (badWordFilter.containsBadWord(request.content())) {
             throw new BusinessException(ErrorCode.BAD_WORD_DETECTED);
         }
@@ -45,10 +48,83 @@ public class DiaryService {
                 .content(request.content())
                 .diaryDate(today)
                 .isPublic(request.isPublic() != null ? request.isPublic() : true)
+                .emotion(request.emotion())
                 .build();
 
         Diary saved = diaryRepository.save(diary);
         return DiaryResponseDto.from(saved, 0);
+    }
+
+    // PATCH /api/diaries/{diaryId}/emotion - 감정 업데이트
+    @Transactional
+    public DiaryResponseDto updateEmotion(Member member, Long diaryId, Integer emotion) {
+        Diary diary = diaryRepository.findById(diaryId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DIARY_NOT_FOUND));
+
+        if (!diary.getMember().getId().equals(member.getId())) {
+            throw new BusinessException(ErrorCode.DIARY_ACCESS_DENIED);
+        }
+
+        diary.updateEmotion(emotion);
+        return DiaryResponseDto.from(diary, commentRepository.countByDiary(diary));
+    }
+
+    // GET /api/diaries/today-mood - 홈 화면 감정 통계
+    // 전날 오후 9시 ~ 오늘 오후 9시 기준
+    public TodayMoodResponseDto getTodayMood() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime end = now.toLocalDate().atTime(21, 0, 0);
+
+        // 현재가 오후 9시 이후면 오늘 21시 ~ 내일 21시
+        // 현재가 오후 9시 이전이면 어제 21시 ~ 오늘 21시
+        if (now.isAfter(end)) {
+            end = end.plusDays(1);
+        }
+        LocalDateTime start = end.minusDays(1);
+
+        List<Diary> diaries = diaryRepository.findByCreatedAtBetweenAndEmotionIsNotNull(start, end);
+
+        if (diaries.isEmpty()) {
+            return TodayMoodResponseDto.empty();
+        }
+
+        // 감정별 카운트
+        Map<Integer, Long> emotionCounts = diaries.stream()
+                .collect(Collectors.groupingBy(Diary::getEmotion, Collectors.counting()));
+
+        long total = diaries.size();
+        int count100 = emotionCounts.getOrDefault(100, 0L).intValue();
+        int count75  = emotionCounts.getOrDefault(75, 0L).intValue();
+        int count50  = emotionCounts.getOrDefault(50, 0L).intValue();
+        int count25  = emotionCounts.getOrDefault(25, 0L).intValue();
+        int count0   = emotionCounts.getOrDefault(0, 0L).intValue();
+
+        // 평균 감정 계산
+        double avg = diaries.stream()
+                .mapToInt(Diary::getEmotion)
+                .average()
+                .orElse(50);
+
+        // 평균에 따라 대표 감정 결정
+        int representativeEmotion;
+        if (avg >= 87.5) representativeEmotion = 100;
+        else if (avg >= 62.5) representativeEmotion = 75;
+        else if (avg >= 37.5) representativeEmotion = 50;
+        else if (avg >= 12.5) representativeEmotion = 25;
+        else representativeEmotion = 0;
+
+        return new TodayMoodResponseDto(
+                total,
+                count100, count75, count50, count25, count0,
+                Math.round(count100 * 100.0 / total),
+                Math.round(count75  * 100.0 / total),
+                Math.round(count50  * 100.0 / total),
+                Math.round(count25  * 100.0 / total),
+                Math.round(count0   * 100.0 / total),
+                representativeEmotion,
+                start,
+                end
+        );
     }
 
     // 최신순/랜덤 피드
@@ -127,7 +203,6 @@ public class DiaryService {
             throw new BusinessException(ErrorCode.DIARY_ACCESS_DENIED);
         }
 
-        // 금칙어 체크
         if (badWordFilter.containsBadWord(request.content())) {
             throw new BusinessException(ErrorCode.BAD_WORD_DETECTED);
         }

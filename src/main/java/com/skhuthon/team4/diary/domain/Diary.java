@@ -42,6 +42,9 @@ public class Diary {
     @Builder.Default
     private int empathyCount = 0;
 
+    @Column
+    private Integer emotion;  // 100, 75, 50, 25, 0
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -66,5 +69,9 @@ public class Diary {
         this.title = title;
         this.content = content;
         this.isPublic = isPublic;
+    }
+
+    public void updateEmotion(Integer emotion) {
+        this.emotion = emotion;
     }
 }

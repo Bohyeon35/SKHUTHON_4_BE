@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
@@ -52,4 +53,9 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
 
     // 나만 보기 비공개만
     List<Diary> findByMemberAndIsPublicFalseOrderByCreatedAtDesc(Member member);
+
+    // 홈 화면 감정 통계 (전날 오후 9시 ~ 오늘 오후 9시, emotion 있는 것만)
+    List<Diary> findByCreatedAtBetweenAndEmotionIsNotNull(
+            LocalDateTime start, LocalDateTime end
+    );
 }

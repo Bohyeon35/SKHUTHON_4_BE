@@ -13,5 +13,7 @@ public record DiaryRequestDto(
         @Size(min = 100, max = 500, message = "내용은 100자 이상 500자 이하로 입력해주세요.")
         String content,
 
-        Boolean isPublic
+        Boolean isPublic,
+
+        Integer emotion  // 100, 75, 50, 25, 0 중 하나
 ) {}

@@ -10,12 +10,13 @@ public record DiaryResponseDto(
         Long memberId,
         String nickname,
         String profileImage,
-        String title,       // ← title 먼저
-        String content,     // ← content 다음
+        String title,
+        String content,
         LocalDate diaryDate,
         int empathyCount,
         int commentCount,
         boolean isPublic,
+        Integer emotion,
         LocalDateTime createdAt
 ) {
     public static DiaryResponseDto from(Diary diary, int commentCount) {
@@ -30,6 +31,7 @@ public record DiaryResponseDto(
                 diary.getEmpathyCount(),
                 commentCount,
                 diary.isPublic(),
+                diary.getEmotion(),
                 diary.getCreatedAt()
         );
     }
