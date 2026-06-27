@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
 
@@ -57,5 +58,10 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     // 홈 화면 감정 통계 (전날 오후 9시 ~ 오늘 오후 9시, emotion 있는 것만)
     List<Diary> findByCreatedAtBetweenAndEmotionIsNotNull(
             LocalDateTime start, LocalDateTime end
+    );
+
+    // AI 멘트 이메일 발송용 (특정 날짜 일기 중 ai_comment 있는 것)
+    Optional<Diary> findByMemberAndDiaryDateAndAiCommentIsNotNull(
+            Member member, LocalDate diaryDate
     );
 }
