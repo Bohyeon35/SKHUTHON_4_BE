@@ -165,7 +165,7 @@ public class DiaryService {
         if (diaries.isEmpty()) {
             return new TodayMoodResponseDto(
                     0, 0, 0, 0, 0, 0,
-                    0, 0, 0,
+                    50, 50,
                     50,
                     ageGroup,
                     getMoodMessage(ageGroup, 50),
@@ -184,24 +184,22 @@ public class DiaryService {
         int count25  = emotionCounts.getOrDefault(25, 0L).intValue();
         int count0   = emotionCounts.getOrDefault(0, 0L).intValue();
 
-        // 긍정/보통/부정 비율 계산 (합계 100 보장)
-        long positiveRatio = Math.round((count100 + count75) * 100.0 / total);
-        long neutralRatio  = Math.round(count50 * 100.0 / total);
-        long negativeRatio = 100 - positiveRatio - neutralRatio;
+        // 긍정/부정 비율 계산 (보통은 반반, 합계 100 보장)
+        long positiveRatio = Math.round((count100 + count75 + count50 * 0.5) * 100.0 / total);
+        long negativeRatio = 100 - positiveRatio;
 
-        // 대표 감정 결정 (긍정/부정 비율 기준)
+        // 대표 감정 결정 (5단계)
         int representativeEmotion;
         if (positiveRatio >= 75) representativeEmotion = 100;
-        else if (positiveRatio >= 50) representativeEmotion = 75;
+        else if (positiveRatio > negativeRatio) representativeEmotion = 75;
         else if (negativeRatio >= 75) representativeEmotion = 0;
-        else if (negativeRatio >= 50) representativeEmotion = 25;
+        else if (negativeRatio > positiveRatio) representativeEmotion = 25;
         else representativeEmotion = 50;
 
         return new TodayMoodResponseDto(
                 total,
                 count100, count75, count50, count25, count0,
                 positiveRatio,
-                neutralRatio,
                 negativeRatio,
                 representativeEmotion,
                 ageGroup,
