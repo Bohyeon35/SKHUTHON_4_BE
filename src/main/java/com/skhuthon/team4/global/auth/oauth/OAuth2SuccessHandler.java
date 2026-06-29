@@ -1,6 +1,8 @@
 package com.skhuthon.team4.global.auth.oauth;
 
 import com.skhuthon.team4.global.auth.jwt.JwtTokenProvider;
+import com.skhuthon.team4.member.domain.Member;
+import com.skhuthon.team4.member.domain.repository.MemberRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import java.io.IOException;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final MemberRepository memberRepository;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -26,11 +29,21 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
         Long memberId = oAuth2User.getMember().getId();
 
-        String token = jwtTokenProvider.generateToken(memberId);
+        // Access Token + Refresh Token 발급
+        String accessToken = jwtTokenProvider.generateAccessToken(memberId);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(memberId);
+
+        // Refresh Token DB 저장
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+        member.updateRefreshToken(refreshToken);
+        memberRepository.save(member);
 
         log.info("OAuth2 로그인 성공 - memberId: {}", memberId);
 
-        String redirectUrl = "https://cheongchun-v1.vercel.app/oauth/callback?token=" + token;
+        // 프론트에 Access Token + Refresh Token 전달
+        String redirectUrl = "https://cheongchun-v1.vercel.app/oauth/callback?token=" + accessToken
+                + "&refreshToken=" + refreshToken;
         log.info("Redirect URL = {}", redirectUrl);
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }

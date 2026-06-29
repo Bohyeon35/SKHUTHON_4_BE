@@ -38,6 +38,9 @@ public class Member {
     @Builder.Default
     private boolean isNotificationMorning = true;
 
+    @Column(name = "refresh_token", length = 500)
+    private String refreshToken;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -72,5 +75,13 @@ public class Member {
 
     public void updateNotificationMorning(boolean isNotificationMorning) {
         this.isNotificationMorning = isNotificationMorning;
+    }
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public void clearRefreshToken() {
+        this.refreshToken = null;
     }
 }

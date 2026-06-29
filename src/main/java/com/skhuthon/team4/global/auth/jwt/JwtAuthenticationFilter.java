@@ -33,23 +33,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
 
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            Long memberId = jwtTokenProvider.getMemberIdFromToken(token);
+            // Access Token만 인증에 사용
+            String tokenType = jwtTokenProvider.getTokenType(token);
+            if ("access".equals(tokenType) || tokenType == null) {
+                Long memberId = jwtTokenProvider.getMemberIdFromToken(token);
 
-            memberRepository.findById(memberId).ifPresent(member -> {
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                member,
-                                null,
-                                List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                        );
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            });
+                memberRepository.findById(memberId).ifPresent(member -> {
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    member,
+                                    null,
+                                    List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                            );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                });
+            }
         }
 
         filterChain.doFilter(request, response);
     }
 
-    // Authorization 헤더에서 Bearer 토큰 추출
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
