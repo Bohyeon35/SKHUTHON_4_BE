@@ -251,16 +251,15 @@ public class DiaryService {
                 .toList();
     }
 
-    // 추천 피드
+    // 추천 피드 (내 일기 5개 이상일 때만 추천)
     public RecommendFeedResponseDto getRecommendFeed(Member member) {
-        // 내 최신 일기 5개 조회
         List<Diary> recentDiaries = diaryRepository.findTop5ByMemberOrderByCreatedAtDesc(member);
 
-        // 일기가 없으면 메시지 반환
-        if (recentDiaries.isEmpty()) {
+        // 일기가 5개 미만이면 메시지 반환
+        if (recentDiaries.size() < 5) {
             return new RecommendFeedResponseDto(
                     List.of(),
-                    "아직 작성한 일기가 없어요. 일기를 작성하면 맞춤 추천을 받을 수 있어요 ✍️"
+                    "아직 내 일기가 많지 않아요. 일기를 더 작성하면 맞춤 추천을 받을 수 있어요 ✍️"
             );
         }
 
@@ -321,10 +320,7 @@ public class DiaryService {
         commentRepository.deleteByDiary(diary);
         empathyRepository.deleteByDiary(diary);
         notificationRepository.deleteByDiaryId(diaryId);
-
-        // 추천 서버에서도 삭제
         recommendService.deleteDiaryIndex(diaryId);
-
         diaryRepository.delete(diary);
     }
 
