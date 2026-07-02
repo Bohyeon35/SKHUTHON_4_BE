@@ -44,7 +44,7 @@ public class DiaryReminderScheduler {
     }
 
     // 매일 21시 45분 - AI 서버 호출 후 AI 멘트 이메일 발송
-    @Scheduled(cron = "0 45 21 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 58 21 * * *", zone = "Asia/Seoul")
     public void sendAiCommentEmail() {
         log.info("AI 멘트 이메일 스케줄러 시작");
 
